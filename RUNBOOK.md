@@ -25,3 +25,7 @@
 ## New task
 
 Create `TASKS/<id>-<short-name>.md` with owner repository, scope, non-goals, API impact, acceptance checks, and handoff notes. Delete it only after its useful history has been incorporated into `CURRENT.md` or an ADR.
+
+## Content data
+
+Run uploads through the backend API, never by copying files into source directories. `docker compose down` preserves PostgreSQL, OpenSearch, and `media_data`; `docker compose down -v` permanently removes all three local data stores.

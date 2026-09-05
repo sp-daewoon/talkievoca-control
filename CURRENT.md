@@ -20,11 +20,12 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 - The former sample endpoint and sample media are not production assets and are intentionally excluded from the product plan.
 - `docker compose up --build` verified the new backend on 2026-09-05: `/health` returns 200, `애플` resolves to `apple`, PostgreSQL stores two seed entries, OpenSearch indexes two documents, and bundled audio is served from port 8080.
 - A physical Watch must call the Mac's LAN address during local development, never `localhost`.
+- MVP-002 completed on 2026-09-05: a real PDF upload created a PostgreSQL source/chunk record and was retrieved through OpenSearch. A real M4A upload updated `apple` to a stored `/v1/media/{id}` playback URL, which the Watch feedback endpoint returned and streamed.
 
 ## Active task
 
-`TASKS/MVP-001-watch-to-api.md`: complete and verify the clean Kotlin/Spring AI backend contract, then migrate the Apple PoC into its product repository and point it to that contract.
+`TASKS/MVP-001-watch-to-api.md`: migrate the existing Watch PoC into `talkievoca-apple` and connect it to the verified backend contract.
 
 ## Next action
 
-Run the Docker Compose API and index checks, push the new repository, then create `talkievoca-apple` and migrate the existing Watch PoC deliberately.
+Create `talkievoca-apple`, migrate the existing Watch PoC deliberately, and point it at the Mac LAN address or deployed backend URL.
