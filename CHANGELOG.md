@@ -4,7 +4,7 @@ All notable changes to the TalkieVoca control system are recorded here.
 
 ## 2026-09-05
 
-- Replaced the planned remote-only Qwen path with a verified pinned ARM64 Rust CPU service, then replaced its 6.2 GiB full server with a 3.1 GiB single-model adapter while preserving official CUDA/vLLM as the production-compatible option.
+- Replaced the planned remote-only Qwen path with a verified pinned ARM64 Rust CPU service, then replaced its 6.2 GiB full server with a single-model adapter that settles near 2.1 GiB while preserving official CUDA/vLLM as the production-compatible option.
 - Reworked the control README as the product documentation hub and added a standalone architecture page covering the BPMN user journey, runtime boundaries, resolver order, data provenance, deployment, and API contracts.
 - Recorded the implemented Qwen audio contract, Ollama pending-cache behavior, trusted-index isolation, Watch recorder/playback build, and remaining hardware acceptance.
 - Added ADR 0007 and MVP-003 for hybrid native/Qwen voice input, RAG-assisted Ollama fallback, pending generated-data provenance, and on-device example speech.

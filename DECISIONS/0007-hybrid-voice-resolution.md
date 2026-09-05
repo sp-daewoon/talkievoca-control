@@ -28,6 +28,6 @@ The local development host is an Apple Silicon Mac. Qwen3-ASR's official high-th
 - A missing or unhealthy Qwen service returns a typed 503 and does not block the text/Siri path.
 - A missing or unhealthy Ollama service preserves the existing 404 behavior for unknown words.
 - The first local ASR start downloads Qwen3-ASR-0.6B into a persistent Docker volume and takes longer than cached starts.
-- The narrow adapter cuts measured idle ASR memory from about 6.2 GiB for the provider's full server to about 3.1 GiB without modifying the image's installed Rust library.
+- The narrow adapter cuts measured ASR memory from about 6.2 GiB for the provider's full server to about 3.1 GiB during startup and 2.1 GiB after settling, without modifying the image's installed Rust library.
 - Warm local CPU transcription is suitable for the personal MVP; production can switch to the official CUDA/vLLM deployment without changing the Watch API.
 - User recordings are transient request bodies. They are not stored unless a later privacy ADR explicitly permits retention.

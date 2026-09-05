@@ -28,7 +28,7 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 - The updated Watch app records a transient three-second M4A, uploads it to Qwen, and plays stored pronunciation plus the English example. Its watchOS simulator SDK build and App Intents metadata extraction pass.
 - Docker Compose now runs a pinned ARM64 Qwen3-ASR-0.6B image with a product-owned narrow adapter over its Rust CPU backend. The real Kotlin audio endpoint resolved English `apple.m4a` and synthesized Korean `사과` audio to trusted `apple` data; `/health` reports both ASR and SLM ready after warm-up.
 - Java 21 attempted an h2c upgrade against the ASR nginx proxy, causing valid multipart fields to be ignored. The Qwen client now forces HTTP/1.1 and has a regression check for the absent `Upgrade` header.
-- The provider's full server downloaded and preloaded unrelated models, consumed about 6.2 GiB, and exposed incomplete-cache handling during bootstrap. The narrow adapter now loads one model from one persistent cache volume and measured about 3.1 GiB.
+- The provider's full server downloaded and preloaded unrelated models, consumed about 6.2 GiB, and exposed incomplete-cache handling during bootstrap. The narrow adapter now loads one model from one persistent cache volume and measured about 3.1 GiB during startup and 2.1 GiB after settling.
 
 ## Active task
 

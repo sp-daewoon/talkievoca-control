@@ -47,5 +47,5 @@ A Watch user can use fast native dictation or record a short utterance for Qwen3
 - The Watch app builds against the watchOS simulator SDK with App Intents metadata, short M4A capture, upload, stored-audio playback, and on-device English example speech.
 - The pinned ARM64 Qwen3-ASR CPU service is running locally. `apple.m4a` completed Qwen → shared resolver in 3.6 seconds after startup; synthesized Korean `사과` completed in 1.7 seconds.
 - The Java client is fixed to HTTP/1.1 because Java 21's h2c upgrade was incompatible with the provider nginx and caused multipart fields to be ignored.
-- A narrow local adapter loads only the Qwen Rust model and reduced measured ASR memory from about 6.2 GiB to 3.1 GiB while retaining English and Korean results.
+- A narrow local adapter loads only the Qwen Rust model and reduced measured ASR memory from about 6.2 GiB to 2.1 GiB after settling while retaining English and Korean results.
 - The updated app is installed on the paired Watch; one physical recording/playback run remains the final hardware acceptance.
