@@ -20,10 +20,10 @@
 - Use `Codable` DTOs at HTTP boundaries. Keep URLSession and API-key handling outside SwiftUI views.
 - Test real Watch behavior on physical hardware; use the simulator for layout and manual request flow only.
 
-## Backend
+## Backend (Kotlin + Spring AI)
 
-- FastAPI endpoints use Pydantic request/response models and explicit status codes.
-- Route handlers remain thin; retrieval and provider calls live in services.
+- Spring MVC endpoints use Kotlin data-class request/response models and explicit status codes.
+- Controllers remain thin; retrieval and provider calls live in services.
 - Vocabulary seed content is versioned text/metadata. Large audio files live in object storage or an ignored local media directory, referenced by stable IDs.
 - Return absolute or app-resolvable HTTPS media URLs; never make the Watch infer filesystem paths.
 

@@ -9,10 +9,10 @@ An Apple Watch user can submit a word and receive a Korean meaning, example, and
 
 ## Backend scope
 
-- New FastAPI repository only.
+- New Kotlin + Spring Boot + Spring AI repository only.
 - `GET /health` returns a stable OK response.
 - `GET /v1/watch/word-feedback?word=<text>` validates a nonempty word and returns one typed feedback object.
-- Use a minimal versioned seed dataset for `apple` and `green`; no LLM or vector database in the first endpoint.
+- Use a minimal versioned seed dataset and bundled pronunciation audio for `apple` and `green`, backed by PostgreSQL and indexed into OpenSearch. No LLM provider call or vector embedding is required in the first endpoint.
 - Return `404` for an unknown word and a typed `422` validation response for invalid input.
 
 ## Apple scope
@@ -45,3 +45,5 @@ An Apple Watch user can submit a word and receive a Korean meaning, example, and
 - `curl '/v1/watch/word-feedback?word=apple'` returns the contract above with 200.
 - `curl '/v1/watch/word-feedback?word=unknown'` returns 404 and the standard error body.
 - On physical Watch, a manually entered or dictated word completes one request and renders the returned meaning.
+
+Backend checks completed on 2026-09-05. The remaining acceptance check belongs to `talkievoca-apple`.

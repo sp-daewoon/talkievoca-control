@@ -1,7 +1,8 @@
 # ADR 0001: Product Repository Boundaries
 
-Status: Accepted
+Status: Superseded
 Date: 2026-09-05
+Superseded by: ADR 0003
 
 ## Context
 
