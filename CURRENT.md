@@ -31,6 +31,7 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 - The provider's full server downloaded and preloaded unrelated models, consumed about 6.2 GiB, and exposed incomplete-cache handling during bootstrap. The narrow adapter now loads one model from one persistent cache volume and measured about 3.1 GiB during startup and 2.1 GiB after settling.
 - A real SLM error cached `오징어 -> octopus` as pending. The `/admin/` review workflow now corrects and approves generated cards transactionally; the actual local record is `오징어 -> squid`, `manual/trusted`, and indexed.
 - The Watch primary audio action now stops after speech silence, a manual finish tap, or five seconds. Network loading finishes before playback, recent pronunciation audio is reused, and Siri returns a short handoff dialog instead of speaking over the lesson.
+- The signed MVP-004 build was installed on the paired Apple Watch Ultra 2. Command-line launch was blocked only because the Watch was passcode-locked; the physical recording/playback acceptance remains a user action.
 
 ## Active task
 
@@ -38,4 +39,4 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 
 ## Next action
 
-Install the updated build on the paired physical Watch, confirm `API · Qwen · SLM 연결됨`, tap `음성으로 찾기`, say `green` and then `오징어`, and verify automatic stop plus one uninterrupted pronunciation/example playback.
+Unlock the paired Watch, open TalkieVoca, confirm `API · Qwen · SLM 연결됨`, tap `음성으로 찾기`, say `green` and then `오징어`, and verify automatic stop plus one uninterrupted pronunciation/example playback.

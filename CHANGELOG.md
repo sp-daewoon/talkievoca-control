@@ -8,6 +8,7 @@ All notable changes to the TalkieVoca control system are recorded here.
 - Recorded the local `/admin/` workflow, transactional alias replacement, `manual/trusted` provenance, and public-deployment authentication boundary.
 - Corrected the actual `오징어 -> octopus` pending cache to `오징어 -> squid` through the new operator API.
 - Replaced fixed three-second Watch recording with silence/manual/maximum-duration completion and added pronunciation audio reuse.
+- Built, signed, and installed the MVP-004 app on the paired Apple Watch Ultra 2; launch awaits Watch unlock.
 
 ## 2026-09-05
 
