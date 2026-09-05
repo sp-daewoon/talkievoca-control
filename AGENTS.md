@@ -7,7 +7,7 @@ Read `CURRENT.md`, `CONSTITUTION.md`, the assigned task in `TASKS/`, and relevan
 ## Ownership
 
 - `talkievoca-apple`: iOS, watchOS, App Intents, watch UI, on-device audio playback.
-- `talkievoca-backend`: FastAPI, vocabulary data, RAG, AI providers, media storage and delivery.
+- `talkievoca-backend`: Kotlin + Spring AI, vocabulary data, RAG, AI providers, media storage and delivery.
 - `_control`: only cross-repository decisions, task contracts, runbooks, and agent rules.
 - `ragBaseSample`: out of scope. Do not copy it into a product repository and do not make product changes there.
 

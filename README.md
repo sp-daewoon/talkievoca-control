@@ -6,11 +6,11 @@ TalkieVoca 제품 개발의 공통 운영 저장소다. 제품 코드는 두 저
 TalkieVoca/
   _control/              # 이 저장소: 규칙, 결정, 현재 상태, 작업 명세
   talkievoca-apple/      # 별도 Git 저장소: iOS + watchOS
-  talkievoca-backend/    # 별도 Git 저장소: FastAPI + RAG + 미디어
+  talkievoca-backend/    # 별도 Git 저장소: Kotlin + Spring AI + RAG + 미디어
   .worktrees/            # Orca 작업용 임시 worktree, Git 추적 금지
 ```
 
-현재 루트의 기존 Watch PoC는 보존한다. 제품 저장소 전환 전까지는 여기서만 실험한다.
+기존 Watch PoC는 `talkievoca-apple`로 이전되었다. 제품 코드는 워크스페이스 루트에 두지 않는다.
 
 ## Start Here
 
