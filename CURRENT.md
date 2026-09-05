@@ -23,12 +23,17 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 - MVP-002 completed on 2026-09-05: a real PDF upload created a PostgreSQL source/chunk record and was retrieved through OpenSearch. A real M4A upload updated `apple` to a stored `/v1/media/{id}` playback URL, which the Watch feedback endpoint returned and streamed.
 - `POST /v1/assistant/query` is the Apple app's single runtime API. `사과` resolves to `apple`; the LAN-address response returns a LAN-address audio URL, and the M4A downloads successfully.
 - The Apple app builds for the watchOS simulator SDK with valid App Intents metadata. The 46 mm simulator launch screen was visually checked; speech recognition remains a physical-Watch acceptance check.
-- Qwen3-ASR, LLM fallback, and generated TTS are not implemented. ADR 0006 fixes the boundary they may later sit behind and prohibits unconfirmed ASR output from polluting trusted RAG data.
+- MVP-003 implements Qwen3-ASR as an explicit short-recording fallback and local `qwen3:4b` through Ollama for RAG-assisted missing-word generation. ADR 0007 preserves the fast Siri text path and separates pending generated cache data from trusted RAG data.
+- MVP-003 backend tests pass through the Qwen-compatible multipart endpoint and shared resolver. Docker port 8080 generated `강아지 -> dog`, cached it as `slm/pending`, served the next lookup in 0.02 seconds, and kept it out of the trusted OpenSearch vocabulary index.
+- The updated Watch app records a transient three-second M4A, uploads it to Qwen, and plays stored pronunciation plus the English example. Its watchOS simulator SDK build and App Intents metadata extraction pass.
+- Docker Compose now runs a pinned ARM64 Qwen3-ASR-0.6B image with a product-owned narrow adapter over its Rust CPU backend. The real Kotlin audio endpoint resolved English `apple.m4a` and synthesized Korean `사과` audio to trusted `apple` data; `/health` reports both ASR and SLM ready after warm-up.
+- Java 21 attempted an h2c upgrade against the ASR nginx proxy, causing valid multipart fields to be ignored. The Qwen client now forces HTTP/1.1 and has a regression check for the absent `Upgrade` header.
+- The provider's full server downloaded and preloaded unrelated models, consumed about 6.2 GiB, and exposed incomplete-cache handling during bootstrap. The narrow adapter now loads one model from one persistent cache volume and measured about 3.1 GiB.
 
 ## Active task
 
-`TASKS/MVP-001-watch-to-api.md`: verify the migrated app's one-input query and automatic audio flow on the paired physical Apple Watch.
+`TASKS/MVP-003-hybrid-voice-resolution.md`: connect explicit Watch audio to Qwen3-ASR and add a provenance-preserving RAG/SLM fallback.
 
 ## Next action
 
-Open `talkievoca-apple/TalkieVoca.xcodeproj`, install it on the paired physical Watch, and verify `사과` and `green` from dictation through API response and audio playback.
+On the paired physical Watch, confirm `API · Qwen · SLM 연결됨`, tap `정확히 듣기`, say `green` and then `사과`, and verify automatic word pronunciation plus English example playback.

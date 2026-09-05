@@ -28,4 +28,6 @@ Create `TASKS/<id>-<short-name>.md` with owner repository, scope, non-goals, API
 
 ## Content data
 
-Run uploads through the backend API, never by copying files into source directories. `docker compose down` preserves PostgreSQL, OpenSearch, and `media_data`; `docker compose down -v` permanently removes all three local data stores.
+Run uploads through the backend API, never by copying files into source directories. `docker compose down` preserves PostgreSQL, OpenSearch, media, and Qwen model caches; `docker compose down -v` permanently removes every local data and model volume.
+
+The first Qwen start may spend several minutes downloading Qwen3-ASR-0.6B. During that time `/health` may report `asr=unavailable` while text lookup remains usable. Do not delete or recreate the Qwen cache volume unless the logs identify an incomplete model download.

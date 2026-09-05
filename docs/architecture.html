@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>TalkieVoca Product Architecture</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: #f5f7fa;
+      --surface: #ffffff;
+      --surface-2: #eef2f6;
+      --ink: #17212b;
+      --muted: #5d6a76;
+      --line: #cbd4dc;
+      --blue: #1769aa;
+      --blue-soft: #e4f2fc;
+      --green: #18845c;
+      --green-soft: #e1f5ec;
+      --amber: #a76408;
+      --amber-soft: #fff1d6;
+      --red: #b63d4a;
+      --purple: #7352a3;
+      --purple-soft: #eee8f8;
+      --shadow: 0 10px 34px rgba(32, 48, 62, 0.08);
+      --radius: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #10151a;
+        --surface: #171e24;
+        --surface-2: #202930;
+        --ink: #ecf1f5;
+        --muted: #a8b4be;
+        --line: #3a4650;
+        --blue: #70b9ee;
+        --blue-soft: #18364b;
+        --green: #67d4a8;
+        --green-soft: #173d31;
+        --amber: #f1bd68;
+        --amber-soft: #493719;
+        --red: #f08e98;
+        --purple: #bda6e0;
+        --purple-soft: #362b48;
+        --shadow: 0 10px 34px rgba(0, 0, 0, 0.26);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+    a { color: var(--blue); }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 0 24px 72px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 54px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--page) 92%, transparent);
+      backdrop-filter: blur(14px);
+    }
+    .brand { font-weight: 750; white-space: nowrap; }
+    .topbar nav { display: flex; gap: 16px; overflow-x: auto; }
+    .topbar a { color: var(--muted); text-decoration: none; white-space: nowrap; font-size: 13px; }
+    .topbar a:hover { color: var(--ink); }
+    .hero {
+      padding: 56px 0 36px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+      gap: 44px;
+      align-items: end;
+    }
+    .eyebrow { color: var(--green); font-size: 13px; font-weight: 760; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 14px; font-size: clamp(36px, 6vw, 68px); line-height: 1.02; letter-spacing: 0; }
+    h2 { margin-bottom: 18px; font-size: 25px; letter-spacing: 0; }
+    h3 { margin-bottom: 9px; font-size: 16px; letter-spacing: 0; }
+    .hero-copy { max-width: 760px; font-size: 19px; color: var(--muted); }
+    .north-star { border-left: 4px solid var(--blue); padding: 4px 0 4px 18px; }
+    .north-star strong { display: block; margin-bottom: 5px; font-size: 13px; color: var(--blue); }
+    .north-star span { font-size: 17px; font-weight: 650; }
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin: 0 0 50px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .status-item { min-height: 88px; padding: 16px; border-right: 1px solid var(--line); }
+    .status-item:last-child { border-right: 0; }
+    .status-item span { display: block; color: var(--muted); font-size: 12px; }
+    .status-item strong { display: block; margin-top: 5px; font-size: 15px; }
+    .ok { color: var(--green); }
+    .wait { color: var(--amber); }
+    section { scroll-margin-top: 72px; margin-top: 54px; }
+    .section-lead { max-width: 780px; color: var(--muted); }
+    .diagram {
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .diagram-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+    .diagram-header strong { font-size: 14px; }
+    .diagram-header span { color: var(--muted); font-size: 12px; }
+    .scroll { overflow-x: auto; }
+    .bpmn { min-width: 1040px; }
+    .lane {
+      display: grid;
+      grid-template-columns: 118px repeat(6, minmax(132px, 1fr));
+      min-height: 118px;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+    .lane:last-child { border-bottom: 0; }
+    .lane-name {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-align: center;
+      background: var(--surface-2);
+    }
+    .cell { position: relative; display: flex; align-items: center; justify-content: center; padding: 12px 8px; }
+    .task {
+      position: relative;
+      z-index: 2;
+      width: 122px;
+      min-height: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 9px;
+      border: 1px solid var(--blue);
+      border-radius: 6px;
+      background: var(--blue-soft);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .task.green { border-color: var(--green); background: var(--green-soft); }
+    .task.amber { border-color: var(--amber); background: var(--amber-soft); }
+    .task.purple { border-color: var(--purple); background: var(--purple-soft); }
+    .task small { display: block; margin-top: 3px; color: var(--muted); font-weight: 500; }
+    .event {
+      position: relative;
+      z-index: 2;
+      width: 52px;
+      height: 52px;
+      border: 3px solid var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      font-size: 11px;
+      text-align: center;
+      font-weight: 700;
+    }
+    .event.end { border-width: 5px; }
+    .gateway {
+      position: relative;
+      z-index: 2;
+      width: 50px;
+      height: 50px;
+      transform: rotate(45deg);
+      border: 2px solid var(--amber);
+      background: var(--amber-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gateway span { transform: rotate(-45deg); font-size: 11px; font-weight: 750; text-align: center; }
+    .flow-right::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: calc(50% + 52px);
+      right: -12px;
+      height: 1px;
+      background: var(--line);
+    }
+    .flow-right::before {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      right: -12px;
+      top: calc(50% - 4px);
+      border-left: 7px solid var(--line);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+    .down {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: calc(50% + 30px);
+      width: 1px;
+      height: 60px;
+      background: var(--line);
+    }
+    .down::after {
+      content: "";
+      position: absolute;
+      left: -4px;
+      bottom: -1px;
+      border-top: 7px solid var(--line);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+    }
+    .note { padding: 13px 18px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
+    .component-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 0.85fr;
+      gap: 18px;
+      padding: 20px;
+      min-width: 880px;
+    }
+    .zone { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+    .zone-title { padding: 10px 12px; background: var(--surface-2); font-size: 13px; font-weight: 750; }
+    .module { margin: 10px; padding: 11px; border-left: 3px solid var(--blue); background: var(--blue-soft); font-size: 12px; }
+    .module.green { border-left-color: var(--green); background: var(--green-soft); }
+    .module.amber { border-left-color: var(--amber); background: var(--amber-soft); }
+    .module.purple { border-left-color: var(--purple); background: var(--purple-soft); }
+    .module strong { display: block; margin-bottom: 2px; font-size: 13px; }
+    .pipeline { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); min-width: 900px; padding: 24px; gap: 28px; align-items: center; }
+    .pipe-node { min-height: 104px; padding: 14px; border: 1px solid var(--line); border-top: 4px solid var(--blue); border-radius: 6px; background: var(--surface); position: relative; }
+    .pipe-node.green { border-top-color: var(--green); }
+    .pipe-node.amber { border-top-color: var(--amber); }
+    .pipe-node.purple { border-top-color: var(--purple); }
+    .pipe-node::after { content: "→"; position: absolute; right: -22px; top: 38px; color: var(--muted); font-size: 21px; }
+    .pipe-node:last-child::after { display: none; }
+    .pipe-node strong { display: block; margin-bottom: 5px; }
+    .pipe-node span { color: var(--muted); font-size: 12px; }
+    .provenance { display: grid; grid-template-columns: 1fr 76px 1fr 76px 1fr; min-width: 960px; padding: 24px; align-items: stretch; }
+    .source-box { padding: 16px; border: 1px solid var(--line); border-radius: 6px; }
+    .source-box.trusted { border-top: 4px solid var(--green); }
+    .source-box.pending { border-top: 4px solid var(--amber); }
+    .source-box.index { border-top: 4px solid var(--purple); }
+    .source-box ul { margin: 9px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+    .connector { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 23px; }
+    .trust-rule { margin: 0 24px 24px; padding: 13px 15px; border-left: 4px solid var(--red); background: color-mix(in srgb, var(--red) 9%, var(--surface)); font-size: 13px; }
+    .deploy { min-width: 920px; padding: 24px; display: grid; grid-template-columns: 170px 56px 1fr 56px 210px; align-items: center; }
+    .device, .host, .external { border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+    .device { border-top: 4px solid var(--blue); }
+    .host { border-top: 4px solid var(--green); }
+    .external { border-top: 4px solid var(--purple); }
+    .host-services { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+    .service { padding: 9px; background: var(--surface-2); font-size: 12px; }
+    .direction { text-align: center; color: var(--muted); font-size: 22px; }
+    .direction small { display: block; font-size: 10px; }
+    .api-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    .api-table th, .api-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .api-table th { color: var(--muted); background: var(--surface-2); font-size: 12px; }
+    .api-table td { font-size: 13px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .decisions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .decision { padding: 15px; border-top: 3px solid var(--blue); background: var(--surface); border-radius: 4px; box-shadow: var(--shadow); }
+    .decision:nth-child(2n) { border-top-color: var(--green); }
+    .decision:nth-child(3n) { border-top-color: var(--amber); }
+    .decision strong { display: block; margin-bottom: 5px; font-size: 13px; }
+    .decision span { color: var(--muted); font-size: 12px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 15px; color: var(--muted); font-size: 12px; }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; background: var(--blue); }
+    .legend .lg-green::before { background: var(--green); }
+    .legend .lg-amber::before { background: var(--amber); }
+    .legend .lg-purple::before { background: var(--purple); }
+    footer { margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 20px; }
+    @media (max-width: 820px) {
+      .shell { padding-left: 16px; padding-right: 16px; }
+      .hero { grid-template-columns: 1fr; gap: 22px; padding-top: 38px; }
+      .status-strip { grid-template-columns: repeat(2, 1fr); }
+      .status-item:nth-child(2) { border-right: 0; }
+      .status-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .decisions { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .topbar { align-items: flex-start; flex-direction: column; gap: 5px; padding: 9px 0; }
+      .topbar nav { width: 100%; }
+      .status-strip { grid-template-columns: 1fr; }
+      .status-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .status-item:last-child { border-bottom: 0; }
+      .decisions { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">TalkieVoca Architecture</div>
+      <nav aria-label="문서 목차">
+        <a href="#journey">서비스 흐름</a>
+        <a href="#components">컴포넌트</a>
+        <a href="#resolution">해석 파이프라인</a>
+        <a href="#data">데이터 신뢰</a>
+        <a href="#deployment">배포</a>
+        <a href="#contracts">API</a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <div>
+          <div class="eyebrow">Product architecture · MVP-003</div>
+          <h1 id="title">TalkieVoca</h1>
+          <p class="hero-copy">손목에서 단어 하나를 말하고, 뜻과 예문을 확인한 뒤, 발음과 영어 문장을 바로 듣는 Apple Watch 중심 영어 학습 서비스.</p>
+        </div>
+        <div class="north-star"><strong>North Star</strong><span>입력 한 번에서 재생까지, 가능한 가장 짧은 흐름</span></div>
+      </section>
+      <div class="status-strip" aria-label="현재 구현 상태">
+        <div class="status-item"><span>Watch → API</span><strong class="ok">실물 PoC 확인</strong></div>
+        <div class="status-item"><span>RAG + 미디어</span><strong class="ok">업로드·검색·재생 확인</strong></div>
+        <div class="status-item"><span>SLM fallback</span><strong class="ok">pending cache 확인</strong></div>
+        <div class="status-item"><span>Qwen 로컬 API</span><strong class="ok">한·영 음성 E2E 확인</strong></div>
+        <div class="status-item"><span>Qwen 실물 E2E</span><strong class="wait">최종 검증 대기</strong></div>
+      </div>
+
+      <section id="journey">
+        <h2>서비스 흐름</h2>
+        <p class="section-lead">기본 경로는 watchOS가 만든 텍스트를 즉시 보내고, 인식이 만족스럽지 않을 때만 사용자가 명시적으로 Qwen 녹음을 선택한다. 두 입력은 백엔드의 같은 resolver에서 합쳐진다.</p>
+        <div class="diagram">
+          <div class="diagram-header"><strong>BPMN 스타일 사용자 여정</strong><span>왼쪽에서 오른쪽으로 읽기</span></div>
+          <div class="scroll">
+            <div class="bpmn" role="img" aria-label="사용자, Apple Watch, Backend, AI와 데이터 레인의 서비스 흐름">
+              <div class="lane">
+                <div class="lane-name">사용자</div>
+                <div class="cell flow-right"><div class="event">단어<br>필요</div></div>
+                <div class="cell flow-right"><div class="task">손목에서 말하기<small>한국어 또는 영어</small></div></div>
+                <div class="cell"><div class="gateway"><span>인식<br>충분?</span></div><div class="down"></div></div>
+                <div class="cell"></div><div class="cell"></div>
+                <div class="cell"><div class="event end">듣기<br>완료</div></div>
+              </div>
+              <div class="lane">
+                <div class="lane-name">Apple Watch</div>
+                <div class="cell"></div>
+                <div class="cell"><div class="task">Siri / 받아쓰기<small>빠른 text path</small></div></div>
+                <div class="cell"><div class="task green">정확히 듣기<small>3초 M4A 녹음</small></div><div class="down"></div></div>
+                <div class="cell flow-right"><div class="task">API 요청<small>query 또는 audio</small></div></div>
+                <div class="cell flow-right"><div class="task green">결과 표시<small>뜻과 한·영 예문</small></div></div>
+                <div class="cell flow-right"><div class="task green">재생<small>음원 + watchOS TTS</small></div></div>
+              </div>
+              <div class="lane">
+                <div class="lane-name">TalkieVoca API</div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell flow-right"><div class="task purple">입력 정규화<small>길이·형식 검증</small></div></div>
+                <div class="cell flow-right"><div class="task purple">공통 Resolver<small>DB → RAG → SLM</small></div></div>
+                <div class="cell"><div class="task">응답 조립<small>절대 audio URL</small></div></div>
+              </div>
+              <div class="lane">
+                <div class="lane-name">AI · Data</div>
+                <div class="cell"></div><div class="cell"></div>
+                <div class="cell"><div class="task amber">Qwen3-ASR<small>audio만 transcript로</small></div></div>
+                <div class="cell"><div class="task green">PostgreSQL<small>단어·별칭 우선</small></div></div>
+                <div class="cell"><div class="task purple">OpenSearch + Ollama<small>문맥 검색 후 생성</small></div></div>
+                <div class="cell"><div class="task amber">pending cache<small>검수 전 신뢰 분리</small></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="note">Siri가 이미 처리한 음성 원본은 앱이 회수할 수 없으므로 Qwen3-ASR은 별도의 foreground 녹음에서만 사용한다.</div>
+        </div>
+      </section>
+
+      <section id="components">
+        <h2>런타임 컴포넌트</h2>
+        <p class="section-lead">Apple 앱은 경험과 재생을, 백엔드는 판단과 데이터 출처를 소유한다. provider와 저장소를 바꿔도 Watch의 기본 API 계약은 유지한다.</p>
+        <div class="diagram">
+          <div class="diagram-header"><strong>컨테이너·컴포넌트 경계</strong><span>소유권 기준</span></div>
+          <div class="scroll">
+            <div class="component-grid">
+              <div class="zone">
+                <div class="zone-title">talkievoca-apple</div>
+                <div class="module"><strong>SwiftUI</strong>입력, 상태, 뜻과 예문 화면</div>
+                <div class="module"><strong>App Intents</strong>Siri가 전달한 text 실행</div>
+                <div class="module green"><strong>AVFoundation</strong>3초 녹음, 음원 재생, 영어 TTS</div>
+                <div class="module"><strong>URLSession Client</strong>versioned HTTP 계약</div>
+              </div>
+              <div class="zone">
+                <div class="zone-title">talkievoca-backend · port 8080</div>
+                <div class="module purple"><strong>WatchFeedbackController</strong>text/audio endpoint와 응답 조립</div>
+                <div class="module purple"><strong>AssistantService</strong>모든 입력의 공통 resolver</div>
+                <div class="module green"><strong>VocabularyService</strong>정규화, DB 조회, pending 저장</div>
+                <div class="module amber"><strong>QwenAsrClient / OllamaClient</strong>외부 AI adapter</div>
+                <div class="module"><strong>Knowledge / Media Services</strong>PDF ingestion과 음원 제공</div>
+              </div>
+              <div class="zone">
+                <div class="zone-title">Runtime dependencies</div>
+                <div class="module green"><strong>PostgreSQL</strong>제품 데이터 source of truth</div>
+                <div class="module purple"><strong>OpenSearch</strong>PDF chunk retrieval index</div>
+                <div class="module amber"><strong>Qwen3-ASR</strong>OpenAI-compatible transcription</div>
+                <div class="module amber"><strong>Ollama qwen3:4b</strong>없는 단어 카드 생성</div>
+                <div class="module"><strong>media_data</strong>PDF 원본과 발음 파일</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="resolution">
+        <h2>단어 해석 파이프라인</h2>
+        <p class="section-lead">모델을 먼저 호출하지 않는다. 확정 데이터가 가장 빠르고 신뢰할 수 있으며, RAG와 SLM은 저장 데이터에 없는 경우에만 뒤에서 보강한다.</p>
+        <div class="diagram">
+          <div class="diagram-header"><strong>Ordered resolver</strong><span>앞 단계가 성공하면 뒤 단계는 호출하지 않음</span></div>
+          <div class="scroll">
+            <div class="pipeline">
+              <div class="pipe-node"><strong>1. Normalize</strong><span>공백, 대소문자, 허용 문자와 최대 길이를 정리한다.</span></div>
+              <div class="pipe-node green"><strong>2. PostgreSQL</strong><span>정확한 단어와 curated alias를 조회한다.</span></div>
+              <div class="pipe-node purple"><strong>3. OpenSearch</strong><span>업로드 PDF에서 관련 chunk를 최대 3개 찾는다.</span></div>
+              <div class="pipe-node amber"><strong>4. Ollama SLM</strong><span>문맥을 참고해 구조화된 단어 카드를 생성한다.</span></div>
+              <div class="pipe-node green"><strong>5. Cache &amp; Return</strong><span>pending으로 저장하고 같은 API 응답 계약으로 반환한다.</span></div>
+            </div>
+          </div>
+          <div class="note">매칭 결과는 `exact`, `alias`, `cache`, `slm`으로 구분하며 Qwen 경로에는 `qwen_` 접두사가 붙는다.</div>
+        </div>
+      </section>
+
+      <section id="data">
+        <h2>RAG 데이터와 신뢰 경계</h2>
+        <p class="section-lead">RAG에 많이 쌓이는 것보다 무엇이 사실인지 구분되는 것이 먼저다. 사용 횟수나 AI 생성만으로 trusted 상태가 되지 않는다.</p>
+        <div class="diagram">
+          <div class="diagram-header"><strong>Provenance lifecycle</strong><span>제품 데이터 오염 방지</span></div>
+          <div class="scroll">
+            <div class="provenance">
+              <div class="source-box trusted"><h3>Trusted input</h3><ul><li>seed / 수동 입력 단어</li><li>검수된 뜻과 예문</li><li>운영자가 업로드한 PDF·음원</li></ul></div>
+              <div class="connector">→</div>
+              <div class="source-box index"><h3>Serving stores</h3><ul><li>PostgreSQL: 원본과 출처</li><li>OpenSearch: PDF retrieval</li><li>media_data: 파일 원본</li></ul></div>
+              <div class="connector">←</div>
+              <div class="source-box pending"><h3>Pending input</h3><ul><li>SLM 생성 단어 카드</li><li>ASR transcript 기반 질의</li><li>재사용 가능, 자동 신뢰 금지</li></ul></div>
+            </div>
+            <div class="trust-rule"><strong>불변 규칙:</strong> `slm/pending` 데이터는 개인 캐시로 응답할 수 있지만, 운영자 검수와 명시적 승격 전에는 trusted vocabulary index에 들어가지 않는다.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="deployment">
+        <h2>로컬 배포 토폴로지</h2>
+        <p class="section-lead">실물 Watch는 Mac의 LAN 주소로 port 8080에 접근한다. `localhost`는 Watch 자신을 뜻하므로 사용할 수 없다.</p>
+        <div class="diagram">
+          <div class="diagram-header"><strong>개발 환경</strong><span>Docker Compose + Mac host</span></div>
+          <div class="scroll">
+            <div class="deploy">
+              <div class="device"><h3>Apple Watch</h3><code>http://192.168.x.x:8080</code><p style="margin:8px 0 0;color:var(--muted);font-size:12px">Siri, dictation, M4A, playback</p></div>
+              <div class="direction">⇄<small>Wi-Fi / LAN</small></div>
+              <div class="host"><h3>Mac · TalkieVoca stack</h3><div class="host-services"><div class="service">Spring Boot :8080</div><div class="service">PostgreSQL</div><div class="service">OpenSearch :9200</div><div class="service">Qwen ASR :8000</div><div class="service">media_data</div><div class="service">Ollama :11434</div></div></div>
+              <div class="direction">→<small>production option</small></div>
+              <div class="external"><h3>External GPU ASR</h3><p style="margin:0;color:var(--muted);font-size:12px">같은 OpenAI-compatible endpoint로 CUDA/vLLM Qwen3-ASR을 연결할 수 있다. API key는 backend 환경 변수에만 둔다.</p></div>
+            </div>
+          </div>
+          <div class="note">현재 Compose는 Apple Silicon에서 Qwen3-ASR-0.6B Rust CPU 모델 하나만 적재하는 소형 API adapter를 제공한다. 제품 합격의 마지막 기준은 실물 Watch 녹음과 재생이다.</div>
+        </div>
+      </section>
+
+      <section id="contracts">
+        <h2>API 계약</h2>
+        <p class="section-lead">Apple runtime은 두 assistant endpoint만 알면 된다. knowledge와 media endpoint는 콘텐츠 운영 경로다.</p>
+        <div class="diagram scroll">
+          <table class="api-table">
+            <thead><tr><th>Method</th><th>Path</th><th>호출자</th><th>책임</th><th>주요 실패</th></tr></thead>
+            <tbody>
+              <tr><td><code>GET</code></td><td><code>/health</code></td><td>Watch / 운영</td><td>API, ASR, SLM 상태</td><td>연결 불가</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/assistant/query</code></td><td>Siri / 앱</td><td>한국어·영어 text 해석</td><td>422 잘못된 입력, 404 미해결</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/assistant/audio</code></td><td>정확히 듣기</td><td>M4A → Qwen transcript → resolver</td><td>422 audio, 503 ASR unavailable</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/knowledge/pdf</code></td><td>운영자</td><td>PDF 저장·추출·chunk index</td><td>422 invalid PDF</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/media/audio</code></td><td>운영자</td><td>단어 발음 파일 등록</td><td>404 word, 422 file</td></tr>
+              <tr><td><code>GET</code></td><td><code>/v1/media/{id}</code></td><td>Watch</td><td>발음 파일 스트리밍</td><td>404 media</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <h2>핵심 설계 원칙</h2>
+        <div class="decisions">
+          <div class="decision"><strong>API-first</strong><span>Apple과 Backend는 versioned HTTP 계약으로만 결합한다.</span></div>
+          <div class="decision"><strong>Fast path first</strong><span>이미 인식된 text에는 ASR을 다시 호출하지 않는다.</span></div>
+          <div class="decision"><strong>One resolver</strong><span>Siri, 앱, Qwen transcript는 같은 단어 해석 순서를 탄다.</span></div>
+          <div class="decision"><strong>Provenance before reuse</strong><span>생성 데이터를 캐시해도 trusted와 섞지 않는다.</span></div>
+          <div class="decision"><strong>Media is media</strong><span>발음 음원은 vector 문서가 아니라 재생 자산으로 관리한다.</span></div>
+          <div class="decision"><strong>Physical Watch is acceptance</strong><span>음성 UX 완료 여부는 simulator가 아니라 실물에서 판정한다.</span></div>
+        </div>
+        <div class="legend"><span>Client / API</span><span class="lg-green">확정 데이터 / 성공 경로</span><span class="lg-amber">AI / 검증 대기</span><span class="lg-purple">RAG / orchestration</span></div>
+      </section>
+    </main>
+    <footer><span>TalkieVoca Product Architecture</span><span>Source of truth: code + accepted ADRs · Updated 2026-09-05</span></footer>
+  </div>
+</body>
+</html>
