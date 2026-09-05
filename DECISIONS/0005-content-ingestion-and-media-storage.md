@@ -18,4 +18,5 @@ The backend accepts PDFs and audio files directly. Raw files live in the Docker 
 
 - Backups must include PostgreSQL plus the `media_data` Docker volume.
 - The first retrieval is OpenSearch text retrieval, not vector RAG. Embeddings and LLM answering require a later ADR and migration.
+- OpenSearch index names are versioned. A mapping change creates a new index version and a reindex task, rather than mutating a live index mapping.
 - Uploaded files must not be committed to Git or placed in source resources.

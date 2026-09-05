@@ -4,7 +4,7 @@ All notable changes to the TalkieVoca control system are recorded here.
 
 ## 2026-09-05
 
-- Completed and verified MVP-002 with real PDF ingestion, OpenSearch retrieval, audio upload, and media streaming.
+- Completed and verified MVP-002 with real PDF ingestion, OpenSearch retrieval, audio upload, media streaming, and a versioned OpenSearch index mapping.
 - Added ADR 0005 and MVP-002 for actual PDF/audio ingestion and searchable persistence.
 - Recorded the verified PostgreSQL, OpenSearch, API, and bundled-audio Compose check.
 - Added the PostgreSQL and OpenSearch Docker Compose architecture in ADR 0004.
