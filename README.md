@@ -9,7 +9,7 @@
 TalkieVoca의 핵심은 화면을 오래 조작하지 않는 것이다. 사용자는 손목을 들고 한국어나 영어 단어 하나를 말한 뒤, 다음 결과를 짧은 흐름 안에서 받아야 한다.
 
 1. Apple Watch에서 Siri/App Intent 또는 앱의 받아쓰기로 단어를 입력한다.
-2. 인식이 아쉬울 때만 `정확히 듣기`로 3초 음성을 Qwen3-ASR에 보낸다.
+2. 앱의 `음성으로 찾기`는 원본 음성을 Qwen3-ASR에 보내고, 짧은 침묵 또는 완료 탭에서 녹음을 끝낸다.
 3. 백엔드는 저장된 단어, RAG 문서, 로컬 SLM 순서로 답을 찾는다.
 4. Watch는 한국어 뜻과 한·영 예문을 보여준다.
 5. 등록된 단어 음원을 재생하고, 음원이 없으면 watchOS TTS로 단어와 예문을 읽는다.
@@ -40,6 +40,7 @@ flowchart LR
 | 지식/미디어 | 구현·테스트 완료 | PDF → PostgreSQL/OpenSearch, M4A → 미디어 저장·스트리밍 확인 |
 | SLM fallback | 구현·테스트 완료 | 없는 단어를 Ollama가 생성하고 `slm/pending`으로 재사용 |
 | Qwen3-ASR | 로컬 API E2E 완료 | 영어 `apple`과 한국어 `사과` 음성 모두 Qwen → resolver → 발음 URL 확인 |
+| 단어 검수 | 구현·테스트 완료 | `/admin/`에서 pending 수정·승인·제외, trusted 인덱싱 확인 |
 | 실물 Watch Qwen E2E | 검증 대기 | 실제 ASR endpoint에서 녹음 → 응답 → 재생 확인 필요 |
 | Siri App Intent | 조건부 | App Intent metadata 빌드 완료, 실제 Siri entitlement는 유료 Apple Developer Team 필요 |
 
@@ -75,7 +76,7 @@ TalkieVoca/
 
 ### High-accuracy fallback
 
-`정확히 듣기 → 3초 M4A → POST /v1/assistant/audio → Qwen3-ASR → 같은 resolver`
+`음성으로 찾기 → 자동/수동 종료 M4A → POST /v1/assistant/audio → Qwen3-ASR → 같은 resolver`
 
 Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qwen은 별도의 명시적 녹음 경로에서만 동작한다. Watch의 임시 녹음은 요청 후 삭제하며 백엔드도 원본 음성을 저장하지 않는다.
 
@@ -86,6 +87,7 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 3. Ollama `qwen3:4b`가 문맥을 참고해 단어 카드를 생성한다.
 4. 생성 결과는 PostgreSQL에 `origin=slm`, `verification_status=pending`으로 캐시한다.
 5. `pending` 데이터는 재조회에 사용할 수 있지만 검수 전에는 신뢰 RAG 인덱스에 넣지 않는다.
+6. 운영자가 `/admin/`에서 수정 승인하면 `manual/trusted`로 바뀌고 별칭과 OpenSearch 문서가 교체된다.
 
 자세한 흐름과 배포 토폴로지는 [아키텍처 문서](docs/architecture.html)에 정리돼 있다.
 
@@ -109,6 +111,8 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 | `GET` | `/health` | API, ASR, SLM 준비 상태 |
 | `POST` | `/v1/assistant/query` | Siri, 받아쓰기, 키보드 텍스트의 기본 진입점 |
 | `POST` | `/v1/assistant/audio` | 명시적 Watch 녹음을 Qwen3-ASR로 인식 |
+| `GET` | `/v1/admin/vocabulary` | pending/trusted 단어 검수 목록 |
+| `POST` | `/v1/admin/vocabulary/corrections` | 단어·예문·별칭 수정 승인 |
 | `POST` | `/v1/knowledge/pdf` | PDF 저장, text chunk 생성, OpenSearch 인덱싱 |
 | `GET` | `/v1/knowledge/search?q=` | 운영 확인용 문서 검색 |
 | `POST` | `/v1/media/audio?word=` | 단어 발음 음원 등록/교체 |
@@ -159,7 +163,7 @@ curl http://localhost:8080/health
 
 - Apple 앱과 백엔드는 versioned HTTP 계약으로만 통신한다.
 - 서버 비밀값과 provider 선택은 백엔드가 소유한다.
-- 사용 횟수는 곧 신뢰도가 아니다. AI 생성 데이터는 자동으로 trusted가 되지 않는다.
+- 사용 횟수는 곧 신뢰도가 아니다. AI 생성 데이터는 자동으로 trusted가 되지 않으며 관리자 수정 승인을 거친다.
 - 단어 음원은 미디어 자산이며 vector 문서가 아니다.
 - 기능 완료는 빌드가 아니라 실물 Watch → API → 재생의 end-to-end 확인으로 판정한다.
 - 되돌리기 어려운 제품·API·데이터 결정은 구현 전에 ADR로 남긴다.
@@ -184,6 +188,6 @@ cd _control
 
 | 단계 | 목표 |
 |---|---|
-| Now | 이미 설치된 실물 Watch 앱에서 Qwen 녹음 → 발음/예문 재생 최종 확인 |
-| Next | pending 단어 검수·승격, HTTPS 인증, 운영 배포와 관측성 |
+| Now | 업데이트된 실물 Watch 앱에서 자동 녹음 종료 → 발음/예문 재생 최종 확인 |
+| Next | 관리자 인증, HTTPS, 운영 배포와 관측성 |
 | Later | 사용자 계정/동기화, 구독 또는 광고, iOS/AOS 클라이언트 확장 |

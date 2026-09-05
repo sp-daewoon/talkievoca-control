@@ -401,7 +401,7 @@
                 <div class="zone-title">talkievoca-apple</div>
                 <div class="module"><strong>SwiftUI</strong>입력, 상태, 뜻과 예문 화면</div>
                 <div class="module"><strong>App Intents</strong>Siri가 전달한 text 실행</div>
-                <div class="module green"><strong>AVFoundation</strong>3초 녹음, 음원 재생, 영어 TTS</div>
+                <div class="module green"><strong>AVFoundation</strong>자동 종료 녹음, 음원 재생, 영어 TTS</div>
                 <div class="module"><strong>URLSession Client</strong>versioned HTTP 계약</div>
               </div>
               <div class="zone">
@@ -409,6 +409,7 @@
                 <div class="module purple"><strong>WatchFeedbackController</strong>text/audio endpoint와 응답 조립</div>
                 <div class="module purple"><strong>AssistantService</strong>모든 입력의 공통 resolver</div>
                 <div class="module green"><strong>VocabularyService</strong>정규화, DB 조회, pending 저장</div>
+                <div class="module green"><strong>Admin Review</strong>수정 승인, alias 교체, trusted 승격</div>
                 <div class="module amber"><strong>QwenAsrClient / OllamaClient</strong>외부 AI adapter</div>
                 <div class="module"><strong>Knowledge / Media Services</strong>PDF ingestion과 음원 제공</div>
               </div>
@@ -450,13 +451,13 @@
           <div class="diagram-header"><strong>Provenance lifecycle</strong><span>제품 데이터 오염 방지</span></div>
           <div class="scroll">
             <div class="provenance">
-              <div class="source-box trusted"><h3>Trusted input</h3><ul><li>seed / 수동 입력 단어</li><li>검수된 뜻과 예문</li><li>운영자가 업로드한 PDF·음원</li></ul></div>
+              <div class="source-box trusted"><h3>Trusted input</h3><ul><li>seed / manual 승인 단어</li><li>검수된 뜻과 예문·별칭</li><li>운영자가 업로드한 PDF·음원</li></ul></div>
               <div class="connector">→</div>
               <div class="source-box index"><h3>Serving stores</h3><ul><li>PostgreSQL: 원본과 출처</li><li>OpenSearch: PDF retrieval</li><li>media_data: 파일 원본</li></ul></div>
               <div class="connector">←</div>
               <div class="source-box pending"><h3>Pending input</h3><ul><li>SLM 생성 단어 카드</li><li>ASR transcript 기반 질의</li><li>재사용 가능, 자동 신뢰 금지</li></ul></div>
             </div>
-            <div class="trust-rule"><strong>불변 규칙:</strong> `slm/pending` 데이터는 개인 캐시로 응답할 수 있지만, 운영자 검수와 명시적 승격 전에는 trusted vocabulary index에 들어가지 않는다.</div>
+            <div class="trust-rule"><strong>불변 규칙:</strong> `slm/pending` 데이터는 개인 캐시로 응답할 수 있지만, `/admin/`에서 뜻·예문·별칭을 수정 승인해 `manual/trusted`가 되기 전에는 trusted vocabulary index에 들어가지 않는다.</div>
           </div>
         </div>
       </section>
@@ -488,7 +489,9 @@
             <tbody>
               <tr><td><code>GET</code></td><td><code>/health</code></td><td>Watch / 운영</td><td>API, ASR, SLM 상태</td><td>연결 불가</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/assistant/query</code></td><td>Siri / 앱</td><td>한국어·영어 text 해석</td><td>422 잘못된 입력, 404 미해결</td></tr>
-              <tr><td><code>POST</code></td><td><code>/v1/assistant/audio</code></td><td>정확히 듣기</td><td>M4A → Qwen transcript → resolver</td><td>422 audio, 503 ASR unavailable</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/assistant/audio</code></td><td>음성으로 찾기</td><td>M4A → Qwen transcript → resolver</td><td>422 audio, 503 ASR unavailable</td></tr>
+              <tr><td><code>GET</code></td><td><code>/v1/admin/vocabulary</code></td><td>운영자 UI</td><td>pending / trusted 검수 목록</td><td>422 status</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/admin/vocabulary/corrections</code></td><td>운영자 UI</td><td>수정·승인·alias 교체·index</td><td>404 word, 422 conflict</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/knowledge/pdf</code></td><td>운영자</td><td>PDF 저장·추출·chunk index</td><td>422 invalid PDF</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/media/audio</code></td><td>운영자</td><td>단어 발음 파일 등록</td><td>404 word, 422 file</td></tr>
               <tr><td><code>GET</code></td><td><code>/v1/media/{id}</code></td><td>Watch</td><td>발음 파일 스트리밍</td><td>404 media</td></tr>
@@ -504,13 +507,14 @@
           <div class="decision"><strong>Fast path first</strong><span>이미 인식된 text에는 ASR을 다시 호출하지 않는다.</span></div>
           <div class="decision"><strong>One resolver</strong><span>Siri, 앱, Qwen transcript는 같은 단어 해석 순서를 탄다.</span></div>
           <div class="decision"><strong>Provenance before reuse</strong><span>생성 데이터를 캐시해도 trusted와 섞지 않는다.</span></div>
+          <div class="decision"><strong>Human promotion</strong><span>AI 생성 단어는 운영자 수정 승인 후에만 trusted가 된다.</span></div>
           <div class="decision"><strong>Media is media</strong><span>발음 음원은 vector 문서가 아니라 재생 자산으로 관리한다.</span></div>
           <div class="decision"><strong>Physical Watch is acceptance</strong><span>음성 UX 완료 여부는 simulator가 아니라 실물에서 판정한다.</span></div>
         </div>
         <div class="legend"><span>Client / API</span><span class="lg-green">확정 데이터 / 성공 경로</span><span class="lg-amber">AI / 검증 대기</span><span class="lg-purple">RAG / orchestration</span></div>
       </section>
     </main>
-    <footer><span>TalkieVoca Product Architecture</span><span>Source of truth: code + accepted ADRs · Updated 2026-09-05</span></footer>
+    <footer><span>TalkieVoca Product Architecture</span><span>Source of truth: code + accepted ADRs · Updated 2026-09-06</span></footer>
   </div>
 </body>
 </html>

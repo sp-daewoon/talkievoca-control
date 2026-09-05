@@ -2,6 +2,13 @@
 
 All notable changes to the TalkieVoca control system are recorded here.
 
+## 2026-09-06
+
+- Added ADR 0008 and MVP-004 for human review of generated vocabulary and smoother Watch recording/playback.
+- Recorded the local `/admin/` workflow, transactional alias replacement, `manual/trusted` provenance, and public-deployment authentication boundary.
+- Corrected the actual `오징어 -> octopus` pending cache to `오징어 -> squid` through the new operator API.
+- Replaced fixed three-second Watch recording with silence/manual/maximum-duration completion and added pronunciation audio reuse.
+
 ## 2026-09-05
 
 - Replaced the planned remote-only Qwen path with a verified pinned ARM64 Rust CPU service, then replaced its 6.2 GiB full server with a single-model adapter that settles near 2.1 GiB while preserving official CUDA/vLLM as the production-compatible option.

@@ -1,6 +1,6 @@
 # Current State
 
-Updated: 2026-09-05
+Updated: 2026-09-06
 Owner: product
 
 ## Product goal
@@ -29,11 +29,13 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 - Docker Compose now runs a pinned ARM64 Qwen3-ASR-0.6B image with a product-owned narrow adapter over its Rust CPU backend. The real Kotlin audio endpoint resolved English `apple.m4a` and synthesized Korean `사과` audio to trusted `apple` data; `/health` reports both ASR and SLM ready after warm-up.
 - Java 21 attempted an h2c upgrade against the ASR nginx proxy, causing valid multipart fields to be ignored. The Qwen client now forces HTTP/1.1 and has a regression check for the absent `Upgrade` header.
 - The provider's full server downloaded and preloaded unrelated models, consumed about 6.2 GiB, and exposed incomplete-cache handling during bootstrap. The narrow adapter now loads one model from one persistent cache volume and measured about 3.1 GiB during startup and 2.1 GiB after settling.
+- A real SLM error cached `오징어 -> octopus` as pending. The `/admin/` review workflow now corrects and approves generated cards transactionally; the actual local record is `오징어 -> squid`, `manual/trusted`, and indexed.
+- The Watch primary audio action now stops after speech silence, a manual finish tap, or five seconds. Network loading finishes before playback, recent pronunciation audio is reused, and Siri returns a short handoff dialog instead of speaking over the lesson.
 
 ## Active task
 
-`TASKS/MVP-003-hybrid-voice-resolution.md`: connect explicit Watch audio to Qwen3-ASR and add a provenance-preserving RAG/SLM fallback.
+`TASKS/MVP-004-review-and-watch-flow.md`: review generated vocabulary and verify the smoother audio flow on physical Watch hardware.
 
 ## Next action
 
-On the paired physical Watch, confirm `API · Qwen · SLM 연결됨`, tap `정확히 듣기`, say `green` and then `사과`, and verify automatic word pronunciation plus English example playback.
+Install the updated build on the paired physical Watch, confirm `API · Qwen · SLM 연결됨`, tap `음성으로 찾기`, say `green` and then `오징어`, and verify automatic stop plus one uninterrupted pronunciation/example playback.
