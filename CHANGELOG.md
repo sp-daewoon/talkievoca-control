@@ -4,6 +4,10 @@ All notable changes to the TalkieVoca control system are recorded here.
 
 ## 2026-09-06
 
+- Added ADR 0009 / MVP-005 for real meaning/question/PDF embeddings, separate reviewed questions, stale/trust filtering, and explicit rebuild/inspection.
+- Added ADR 0010 for administrator PDF/card/MP3 ingestion, bounded SLM extraction, source-link preservation, pending approval and media/vector separation.
+- Documented actual browser PDF/MP3 upload, live SLM extraction and bge-m3/OpenSearch checks separately from provider-stub tests and outstanding physical Watch acceptance.
+- Updated README and architecture diagrams to replace lexical-only descriptions with implemented semantic retrieval; retained history in prior ADRs.
 - Added ADR 0008 and MVP-004 for human review of generated vocabulary and smoother Watch recording/playback.
 - Recorded the local `/admin/` workflow, transactional alias replacement, `manual/trusted` provenance, and public-deployment authentication boundary.
 - Corrected the actual `오징어 -> octopus` pending cache to `오징어 -> squid` through the new operator API.

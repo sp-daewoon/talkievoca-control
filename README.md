@@ -20,12 +20,13 @@ TalkieVoca의 핵심은 화면을 오래 조작하지 않는 것이다. 사용�
 flowchart LR
     U([사용자]) --> W{Watch 입력}
     W -->|Siri / 받아쓰기 / 키보드| Q[POST /v1/assistant/query]
-    W -->|정확히 듣기: 3초 음성| A[POST /v1/assistant/audio]
+    W -->|자동 또는 수동 종료 음성| A[POST /v1/assistant/audio]
     A --> ASR[Qwen3-ASR]
     ASR --> R[공통 Resolver]
     Q --> R
     R --> DB[(PostgreSQL\n단어·별칭·출처)]
-    R --> OS[(OpenSearch\nPDF 검색)]
+    R --> OS[(OpenSearch\n뜻·질문·PDF 벡터 + 키워드)]
+    EMB[Ollama bge-m3 1024차원] --> OS
     R --> SLM[Ollama qwen3:4b]
     R --> F[뜻·예문·오디오 URL]
     F --> P([Watch 화면 + 발음 + 예문 TTS])
@@ -37,7 +38,8 @@ flowchart LR
 |---|---|---|
 | Watch 입력 | PoC 완료 | 실물 Watch에서 받아쓰기와 텍스트 API 호출 확인 |
 | 통합 API | 구현·테스트 완료 | 텍스트와 음성이 하나의 resolver를 사용 |
-| 지식/미디어 | 구현·테스트 완료 | PDF → PostgreSQL/OpenSearch, M4A → 미디어 저장·스트리밍 확인 |
+| 지식/미디어 | 관리자 업로드 검증 완료 | 실제 PDF·MP3 폼 업로드, PDF 단어 추출, MP3 브라우저 디코딩 |
+| 의미 검색 | 초기 통합 검증 완료 | bge-m3 1024차원, 뜻·예문·질문/PDF 임베딩, paraphrase → squid 확인 |
 | SLM fallback | 구현·테스트 완료 | 없는 단어를 Ollama가 생성하고 `slm/pending`으로 재사용 |
 | Qwen3-ASR | 로컬 API E2E 완료 | 영어 `apple`과 한국어 `사과` 음성 모두 Qwen → resolver → 발음 URL 확인 |
 | 단어 검수 | 구현·테스트 완료 | `/admin/`에서 pending 수정·승인·제외, trusted 인덱싱 확인 |
@@ -83,11 +85,21 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 ### Resolution order
 
 1. PostgreSQL의 정확한 영단어와 한국어/영어 별칭을 조회한다.
-2. 일치하지 않으면 OpenSearch에서 업로드된 PDF 문맥을 최대 3개 찾는다.
+2. 일치하지 않으면 bge-m3로 질문을 임베딩해 승인 단어의 뜻·예문·질문과 PDF 본문에서 의미 후보 최대 3개를 찾고, PDF 키워드 검색을 병행한다.
 3. Ollama `qwen3:4b`가 문맥을 참고해 단어 카드를 생성한다.
 4. 생성 결과는 PostgreSQL에 `origin=slm`, `verification_status=pending`으로 캐시한다.
 5. `pending` 데이터는 재조회에 사용할 수 있지만 검수 전에는 신뢰 RAG 인덱스에 넣지 않는다.
-6. 운영자가 `/admin/`에서 수정 승인하면 `manual/trusted`로 바뀌고 별칭과 OpenSearch 문서가 교체된다.
+6. 운영자가 `/admin/`에서 수정 승인하면 `manual/trusted`로 바뀌고 별칭·질문과 OpenSearch 문서가 교체된다. 검색 결과는 최신 PostgreSQL 데이터와 대조해 오래된 결과를 제외한다.
+
+영단어만 벡터화하지 않는다. 한국어 뜻, 한·영 예문, 검수된 질문 표현을 하나의 문서로 구성한다. 모델과 차원을 고정한 `talkievoca-meaning-bge-m3-v1` 인덱스에서 cosine 검색하며 유사도는 정답 확률이 아니다. pgvector 확장이 가능한 DB 이미지를 쓰지만 실제 벡터 저장소는 OpenSearch 하나다.
+
+## Operator Workflow
+
+`/admin/` → **자료 · 음원** → PDF 업로드 → 목록의 **단어 추출** → **단어 검수**에서 뜻·예문·질문 승인 → 단어에 MP3 연결·미리듣기.
+
+신규 단어는 수동 등록도 가능하다. PDF 추출은 앞 12,000자에서 최대 20개를 제안하고 신규 카드만 `pending`으로 저장한다. 기존 단어는 보존하며 PDF 출처 연결을 남긴다. 전체 PDF의 검색용 chunk는 별도로 생성한다. 스캔 PDF OCR과 대용량 비동기 추출은 아직 지원하지 않는다. MP3는 단어 발음 자산이며 벡터화하지 않고 예문은 Watch TTS를 유지한다.
+
+**의미 검색 확인**에서 후보 본문/유사도를 확인하고 **임베딩 다시 생성**에서 성공·실패 개수를 확인한다. 임베딩 실패는 DB 저장을 취소하지 않으므로 복구 후 재생성해야 한다. 상세 설정과 검증 한계는 backend README를 따른다.
 
 자세한 흐름과 배포 토폴로지는 [아키텍처 문서](docs/architecture.html)에 정리돼 있다.
 
@@ -95,9 +107,9 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 
 | 데이터 | 저장 위치 | 정책 |
 |---|---|---|
-| 단어, 뜻, 예문, 별칭, 검증 상태 | PostgreSQL | 제품 데이터의 source of truth |
+| 단어, 뜻, 예문, 별칭, 질문, 출처 연결, 검증 상태 | PostgreSQL | 제품 데이터의 source of truth |
 | PDF 원본과 업로드 음원 | Docker `media_data` volume | Git에 커밋하지 않음 |
-| PDF chunk 검색 인덱스 | OpenSearch | 재생성 가능한 retrieval index |
+| 뜻·질문·PDF의 1024차원 벡터와 키워드 인덱스 | OpenSearch | 재생성 가능한 retrieval index |
 | SLM 생성 단어 | PostgreSQL | `pending`으로 저장 후 검수 전 신뢰 인덱스 제외 |
 | Watch 사용자 녹음 | 저장 안 함 | ASR 요청 동안만 존재하고 즉시 폐기 |
 | 인증 정보/API key | 로컬 환경 변수 | 앱과 Git에 넣지 않음 |
@@ -114,6 +126,10 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 | `GET` | `/v1/admin/vocabulary` | pending/trusted 단어 검수 목록 |
 | `POST` | `/v1/admin/vocabulary/corrections` | 단어·예문·별칭 수정 승인 |
 | `POST` | `/v1/knowledge/pdf` | PDF 저장, text chunk 생성, OpenSearch 인덱싱 |
+| `GET` | `/v1/knowledge/sources` | 업로드 자료 목록 |
+| `POST` | `/v1/knowledge/{sourceId}/vocabulary` | PDF에서 검수 대기 단어 취합 |
+| `GET` | `/v1/admin/vocabulary/search?q=` | 의미 후보와 cosine 확인 |
+| `POST` | `/v1/admin/vocabulary/reindex` | 뜻·질문·PDF 벡터 재생성 |
 | `GET` | `/v1/knowledge/search?q=` | 운영 확인용 문서 검색 |
 | `POST` | `/v1/media/audio?word=` | 단어 발음 음원 등록/교체 |
 | `GET` | `/v1/media/{mediaId}` | Watch용 음원 스트리밍 |
@@ -144,6 +160,7 @@ Siri가 소비한 원본 음성은 앱이 다시 얻을 수 없다. 따라서 Qw
 cd talkievoca-backend
 brew services start ollama
 ollama pull qwen3:4b
+ollama pull bge-m3
 docker compose up --build
 curl http://localhost:8080/health
 ```

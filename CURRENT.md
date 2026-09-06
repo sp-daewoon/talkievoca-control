@@ -35,8 +35,19 @@ On Apple Watch, a user speaks or enters an English word. The app requests feedba
 
 ## Active task
 
-`TASKS/MVP-004-review-and-watch-flow.md`: review generated vocabulary and verify the smoother audio flow on physical Watch hardware.
+`TASKS/MVP-005-semantic-retrieval.md`: backend implementation and verification complete. MVP-004 physical Watch acceptance remains pending.
+
+## Latest backend facts
+
+- The pre-MVP-005 backend had exact/alias and lexical PDF retrieval, not vector embeddings. ADR 0009 adds real Ollama bge-m3 1024-dimensional document/query vectors in a dedicated OpenSearch index.
+- Documents combine meanings, bilingual examples, reviewed questions; headwords remain exact-lookup metadata. Uploaded PDF chunks are also embedded. Pending cards and stale database content are excluded from vector results.
+- `/admin/` now includes PDF upload/source list, explicit PDF-to-pending extraction, new-card creation, MP3 attachment/preview, semantic inspection and reindex counts (ADR 0010).
+- Real PDF extraction returned squid/green/lantern; existing approved cards survived and lantern became pending. Word/source links are retained through corrections.
+- Actual browser forms uploaded PDF and MP3; Chrome decoded apple audio (0.461497 seconds). Meaning query `오징어의 영어 표현을 알려줘` retrieved squid at cosine about 0.677. Desktop/mobile overflow and JS error checks passed.
+- Card extraction is bounded to 12000 characters/20 cards; PDF retrieval indexes the full extracted text in overlapping chunks. No scanned-PDF OCR, background jobs or production authentication yet.
+- Similarity cutoff 0.45 is provisional, not an accuracy claim. Embedding failure preserves DB writes; use admin rebuild after recovery. `/health` does not report embedding readiness.
+- Final regression: 17 tests passed; live rebuild returned indexed=5, failed=0. Watch feedback returns the uploaded MP3 URL. Final mobile source buttons remain single-line without horizontal overflow.
 
 ## Next action
 
-Unlock the paired Watch, open TalkieVoca, confirm `API · Qwen · SLM 연결됨`, tap `음성으로 찾기`, say `green` and then `오징어`, and verify automatic stop plus one uninterrupted pronunciation/example playback.
+After backend delivery, use `/admin/` with a real lesson PDF, approve extracted translations and attach matching pronunciation, then verify that card's playback on the physical Watch. Browser decoding is not hardware acceptance.

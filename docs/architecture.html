@@ -364,7 +364,7 @@
                 <div class="lane-name">Apple Watch</div>
                 <div class="cell"></div>
                 <div class="cell"><div class="task">Siri / 받아쓰기<small>빠른 text path</small></div></div>
-                <div class="cell"><div class="task green">정확히 듣기<small>3초 M4A 녹음</small></div><div class="down"></div></div>
+                <div class="cell"><div class="task green">음성으로 찾기<small>침묵 / 수동 종료 M4A</small></div><div class="down"></div></div>
                 <div class="cell flow-right"><div class="task">API 요청<small>query 또는 audio</small></div></div>
                 <div class="cell flow-right"><div class="task green">결과 표시<small>뜻과 한·영 예문</small></div></div>
                 <div class="cell flow-right"><div class="task green">재생<small>음원 + watchOS TTS</small></div></div>
@@ -416,7 +416,7 @@
               <div class="zone">
                 <div class="zone-title">Runtime dependencies</div>
                 <div class="module green"><strong>PostgreSQL</strong>제품 데이터 source of truth</div>
-                <div class="module purple"><strong>OpenSearch</strong>PDF chunk retrieval index</div>
+                <div class="module purple"><strong>OpenSearch + bge-m3</strong>뜻·질문·PDF 1024차원 벡터</div>
                 <div class="module amber"><strong>Qwen3-ASR</strong>OpenAI-compatible transcription</div>
                 <div class="module amber"><strong>Ollama qwen3:4b</strong>없는 단어 카드 생성</div>
                 <div class="module"><strong>media_data</strong>PDF 원본과 발음 파일</div>
@@ -435,7 +435,7 @@
             <div class="pipeline">
               <div class="pipe-node"><strong>1. Normalize</strong><span>공백, 대소문자, 허용 문자와 최대 길이를 정리한다.</span></div>
               <div class="pipe-node green"><strong>2. PostgreSQL</strong><span>정확한 단어와 curated alias를 조회한다.</span></div>
-              <div class="pipe-node purple"><strong>3. OpenSearch</strong><span>업로드 PDF에서 관련 chunk를 최대 3개 찾는다.</span></div>
+              <div class="pipe-node purple"><strong>3. OpenSearch</strong><span>뜻·예문·질문과 PDF의 의미 후보 최대 3개 + PDF 키워드 검색.</span></div>
               <div class="pipe-node amber"><strong>4. Ollama SLM</strong><span>문맥을 참고해 구조화된 단어 카드를 생성한다.</span></div>
               <div class="pipe-node green"><strong>5. Cache &amp; Return</strong><span>pending으로 저장하고 같은 API 응답 계약으로 반환한다.</span></div>
             </div>
@@ -453,7 +453,7 @@
             <div class="provenance">
               <div class="source-box trusted"><h3>Trusted input</h3><ul><li>seed / manual 승인 단어</li><li>검수된 뜻과 예문·별칭</li><li>운영자가 업로드한 PDF·음원</li></ul></div>
               <div class="connector">→</div>
-              <div class="source-box index"><h3>Serving stores</h3><ul><li>PostgreSQL: 원본과 출처</li><li>OpenSearch: PDF retrieval</li><li>media_data: 파일 원본</li></ul></div>
+              <div class="source-box index"><h3>Serving stores</h3><ul><li>PostgreSQL: 원본·질문·출처 연결</li><li>OpenSearch: bge-m3 벡터 + 키워드</li><li>media_data: PDF·MP3 원본</li></ul></div>
               <div class="connector">←</div>
               <div class="source-box pending"><h3>Pending input</h3><ul><li>SLM 생성 단어 카드</li><li>ASR transcript 기반 질의</li><li>재사용 가능, 자동 신뢰 금지</li></ul></div>
             </div>
@@ -493,6 +493,9 @@
               <tr><td><code>GET</code></td><td><code>/v1/admin/vocabulary</code></td><td>운영자 UI</td><td>pending / trusted 검수 목록</td><td>422 status</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/admin/vocabulary/corrections</code></td><td>운영자 UI</td><td>수정·승인·alias 교체·index</td><td>404 word, 422 conflict</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/knowledge/pdf</code></td><td>운영자</td><td>PDF 저장·추출·chunk index</td><td>422 invalid PDF</td></tr>
+              <tr><td><code>GET</code></td><td><code>/v1/knowledge/sources</code></td><td>운영자</td><td>PDF 목록과 chunk 개수</td><td>업로드 원본 유지</td></tr>
+              <tr><td><code>POST</code></td><td><code>/v1/knowledge/{sourceId}/vocabulary</code></td><td>운영자</td><td>앞 12,000자에서 최대 20개 pending 카드</td><td>OCR 미지원 · 검수 필요</td></tr>
+              <tr><td><code>GET / POST</code></td><td><code>/v1/admin/vocabulary/search · reindex</code></td><td>운영자</td><td>의미 후보 확인 · 벡터 재생성</td><td>유사도는 정답 확률 아님</td></tr>
               <tr><td><code>POST</code></td><td><code>/v1/media/audio</code></td><td>운영자</td><td>단어 발음 파일 등록</td><td>404 word, 422 file</td></tr>
               <tr><td><code>GET</code></td><td><code>/v1/media/{id}</code></td><td>Watch</td><td>발음 파일 스트리밍</td><td>404 media</td></tr>
             </tbody>
